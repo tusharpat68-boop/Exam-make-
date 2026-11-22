@@ -5,3 +5,6 @@ node_modules/
 *.log
 serviceAccountKey.json
 firebase-adminsdk*.json
+service-account.json
+*serviceAccount*.json
+*firebase-adminsdk*.json
