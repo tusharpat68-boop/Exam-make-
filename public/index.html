@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ExamMaker AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" href="style.css">
+<style id="layoutStyle"></style>
+<script src="vendor/katex/katex.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">ExamMaker <span>AI</span></div>
+  <button id="logoutBtn" class="ghost hidden">Logout</button>
+</header>
+
+<main>
+  <!-- AUTH -->
+  <section id="authView" class="card">
+    <h2 id="authTitle">Login</h2>
+    <form id="authForm">
+      <input id="email" type="email" placeholder="Email" required autocomplete="email">
+      <input id="password" type="password" placeholder="Password (min 6)" required minlength="6" autocomplete="current-password">
+      <button type="submit" id="authSubmit">Login</button>
+    </form>
+    <p class="links">
+      <a href="#" id="toggleAuth">Create an account</a> ·
+      <a href="#" id="resetLink">Forgot password?</a>
+    </p>
+    <p id="authMsg" class="msg"></p>
+  </section>
+
+  <!-- APP -->
+  <section id="appView" class="hidden">
+    <div class="card noprint" id="uploadCard">
+      <h2>Study Materials</h2>
+      <p class="note">Upload photos or PDFs. The text is extracted so you can check and correct it before it is used.</p>
+      <div id="dropzone" class="drop">
+        <div class="row">
+          <button type="button" id="pickBtn">Choose files</button>
+          <button type="button" id="camBtn" class="ghost">Take photo</button>
+        </div>
+        <p class="note">JPG, PNG, WEBP or PDF · up to 6 MB each · up to 10 files</p>
+      </div>
+      <label>Content type
+        <select id="uploadMode">
+          <option value="text">Study text (Bengali / English)</option>
+          <option value="math">Math problems / equations</option>
+        </select>
+      </label>
+      <input type="file" id="fileInput" multiple hidden accept="image/jpeg,image/png,image/webp,application/pdf">
+      <input type="file" id="cameraInput" hidden accept="image/*" capture="environment">
+      <p id="uploadMsg" class="msg"></p>
+      <div id="fileList"></div>
+    </div>
+
+    <div class="card noprint">
+      <h2>School profiles &amp; templates</h2>
+      <p class="note">A profile stores school name, address, EIIN, contact, website, logo and print layout. A template stores a question pattern (sections, marks, difficulty). Built-in templates are editable examples, not official formats.</p>
+      <h3>School profile</h3>
+      <label>Saved profiles <select id="profSelect"></select></label>
+      <p id="activeProf" class="note"></p>
+      <div class="frow actions">
+        <button type="button" id="profUse" class="ghost small">Use for new papers</button>
+        <button type="button" id="profApply" class="ghost small">Apply to open paper</button>
+        <button type="button" id="profUpdate" class="ghost small">Update selected</button>
+        <button type="button" id="profDelete" class="ghost small">Delete</button>
+      </div>
+      <div class="frow actions"><input id="profName" maxlength="100" placeholder="New profile name"><button type="button" id="profSave" class="small">Save as new</button></div>
+      <p class="note">"Save as new" takes details and layout from the open paper, or from the form if none is open.</p>
+      <p id="profMsg" class="msg noprint"></p>
+      <h3>Exam template</h3>
+      <label>Templates <select id="tplSelect"></select></label>
+      <div class="frow actions">
+        <button type="button" id="tplLoad" class="ghost small">Load into form</button>
+        <button type="button" id="tplDelete" class="ghost small">Delete</button>
+      </div>
+      <div class="frow actions"><input id="tplName" maxlength="100" placeholder="New template name"><button type="button" id="tplSave" class="small">Save form as template</button></div>
+      <p id="tplMsg" class="msg noprint"></p>
+    </div>
+
+    <div class="card noprint">
+      <h2>Create Question Paper</h2>
+      <form id="paperForm">
+        <label>School name <input id="school" placeholder="School name"></label>
+        <label>Exam name <input id="examName" placeholder="Half-Yearly Examination"></label>
+        <div class="row">
+          <label>Class <input id="className" placeholder="9"></label>
+          <label>Subject <input id="subject" placeholder="Mathematics" required></label>
+        </div>
+        <div class="row">
+          <label>Full marks <input id="fullMarks" type="number" min="1" value="30" required></label>
+          <label>Language
+            <select id="language"><option value="bn">Bengali</option><option value="en">English</option><option value="mixed">Mixed</option></select>
+          </label>
+        </div>
+        <label>Chapter / topic <input id="chapter" placeholder="Optional"></label>
+
+        <h3>Sections</h3>
+        <div id="sections"></div>
+        <button type="button" id="addSection" class="ghost">+ Add section</button>
+        <p id="marksInfo" class="msg"></p>
+
+        <h3>Difficulty %</h3>
+        <div class="row three">
+          <label>Easy <input id="dEasy" type="number" value="30" min="0" max="100"></label>
+          <label>Medium <input id="dMed" type="number" value="50" min="0" max="100"></label>
+          <label>Hard <input id="dHard" type="number" value="20" min="0" max="100"></label>
+        </div>
+
+        <label>Study material (optional text) <textarea id="sourceText" rows="5" placeholder="Paste text from the textbook. Questions will be based only on this."></textarea></label>
+
+        <button type="submit" id="genBtn">Generate</button>
+        <p id="genMsg" class="msg"></p>
+      </form>
+    </div>
+
+    <div class="card noprint">
+      <h2>Math Solver</h2>
+      <form id="mathForm">
+        <label>Problem <textarea id="mathProblem" rows="3" placeholder="Solve x^2 - 5x + 6 = 0" required></textarea></label>
+        <div class="row">
+          <label>Class <input id="mathClass" placeholder="9"></label>
+          <label>Language
+            <select id="mathLang"><option value="bn">Bengali</option><option value="en">English</option></select>
+          </label>
+        </div>
+        <button type="submit" id="mathBtn">Solve and verify</button>
+        <p id="mathMsg" class="msg"></p>
+      </form>
+      <div id="mathResult"></div>
+    </div>
+
+    <div id="editorCard" class="card hidden noprint">
+      <h2>Edit Paper</h2>
+      <div id="genNotes"></div>
+      <div class="row three">
+        <label>School <input id="metaSchool"></label>
+        <label>Exam name <input id="metaExam"></label>
+        <label>Full marks <input id="metaFull" type="number" min="0"></label>
+      </div>
+      <details id="layoutBox" class="sub">
+        <summary>Paper details &amp; print layout</summary>
+        <div class="row three">
+          <label>Address <input id="metaAddress" maxlength="200"></label>
+          <label>Date <input id="metaDate" maxlength="40" placeholder="2026-12-01"></label>
+          <label>Time <input id="metaDuration" maxlength="40" placeholder="2 hours"></label>
+        </div>
+        <div class="row three">
+          <label>EIIN <input id="metaEiin" maxlength="20"></label>
+          <label>Contact <input id="metaContact" maxlength="100"></label>
+          <label>Website <input id="metaWebsite" maxlength="200"></label>
+        </div>
+        <div class="grid2">
+          <label>Template <select id="lyTemplate"><option value="traditional">Traditional school</option><option value="modern">Modern professional</option></select></label>
+          <label>Page size <select id="lyPage"><option value="A4">A4</option><option value="A5">A5</option></select></label>
+          <label>Margins (mm) <select id="lyMargin"><option>10</option><option>12</option><option>15</option><option>18</option><option>20</option></select></label>
+          <label>Font <select id="lyFont"><option value="sans">Sans-serif</option><option value="serif">Serif</option></select></label>
+          <label>Font size (pt) <select id="lyFontSize"><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option></select></label>
+          <label>Line spacing <select id="lyLine"><option>1.2</option><option>1.35</option><option>1.5</option><option>1.7</option><option>2</option></select></label>
+          <label>Question spacing <select id="lySpacing"><option value="compact">Compact</option><option value="normal">Normal</option><option value="relaxed">Relaxed</option></select></label>
+          <label>Numbers and marks <select id="lyNumerals"><option value="en">English (1, 2, 3)</option><option value="bn">Bengali (১, ২, ৩)</option></select></label>
+          <label>Header <select id="lyAlign"><option value="center">Centered</option><option value="left">Left</option></select></label>
+          <label>Page border <select id="lyBorder"><option value="none">None</option><option value="single">Single</option><option value="double">Double</option></select></label>
+        </div>
+        <label>Header text (top of every page) <input id="lyHeader" maxlength="100"></label>
+        <label>Footer text (bottom left) <input id="lyFooter" maxlength="100"></label>
+        <label>Watermark <input id="lyWatermark" maxlength="30" placeholder="e.g. DRAFT"></label>
+        <label class="check"><input type="checkbox" id="lyPageNum"> Page numbers</label>
+        <div class="frow actions">
+          <button type="button" id="lyLogoBtn" class="ghost small">Choose school logo</button>
+          <button type="button" id="lyLogoClear" class="ghost small hidden">Remove logo</button>
+          <input type="file" id="lyLogo" hidden accept="image/png,image/jpeg,image/webp">
+        </div>
+        <p id="lyMsg" class="msg"></p>
+        <p class="note">Numerals apply to question numbers, marks and header values, never to digits inside question text or formulas.</p>
+      </details>
+      <div id="editorWarnings"></div>
+      <p id="marksLine" class="msg"></p>
+      <div id="editorBody"></div>
+      <div class="newsec">
+        <label>New section type <select id="newSecType"></select></label>
+        <button type="button" id="newSecBtn" class="ghost">+ Add section</button>
+      </div>
+      <div class="frow actions">
+        <button type="button" id="saveBtn">Save paper</button>
+        <button type="button" id="answersBtn" class="ghost">Generate answers</button>
+        <button type="button" id="answersAllBtn" class="ghost small">Redo all answers</button>
+      </div>
+      <p id="editorMsg" class="msg"></p>
+    </div>
+
+    <div id="previewCard" class="card hidden">
+      <div class="row noprint">
+        <h2>Preview</h2>
+        <label>Print mode <select id="viewMode"></select></label>
+      </div>
+      <div class="setsrow noprint">
+        <label>Number of sets <select id="setCount"><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+        <button type="button" id="setsBtn" class="ghost small">Create sets</button>
+        <button type="button" id="setsClear" class="ghost small hidden">Remove sets</button>
+        <label id="setViewWrap" class="hidden">Show <select id="setView"></select></label>
+      </div>
+      <p id="setsMsg" class="msg noprint"></p>
+      <div class="frow actions noprint">
+        <button type="button" id="printBtn">Print / Save as PDF</button>
+        <button type="button" id="docxBtn" class="ghost">Download Word (.docx)</button>
+      </div>
+      <p id="docxMsg" class="msg noprint"></p>
+      <p class="note noprint">In the print window choose "Save as PDF" and make sure the paper size matches your layout (A4 or A5). Turn off the browser's own "Headers and footers" option. Sets have the same questions and marks in a different order (MCQ options are shuffled too); choose "All sets" to print them together, one per page.</p>
+      <div id="paper" class="paper"></div>
+      <p class="note noprint">Teachers should review this paper against current institutional examination requirements before use.</p>
+    </div>
+
+    <div id="papersCard" class="card noprint">
+      <h2>My Papers</h2>
+      <div id="paperList"></div>
+      <p id="listMsg" class="msg"></p>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
